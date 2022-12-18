@@ -210,14 +210,13 @@ ESQ:					#move para a esquerda
 	j PRINT_PARTE_TAB	
 	
 COLOCA_PECA_COLUNA:
-	la a0, coluna_peca
-	lw t0, 0(a0)
-	la a1, vetor_tab
+	la a0, vetor_tab
+	la a1, coluna_peca
+	lw t0, 0(a1)
 	
-	add a1, a1, t0
+	add a0, a0, t0
   
   	li t0, 7
-  	la a0, vetor_tab
   	la a1, vetor_peca
   	la a2, linha_peca
   	li t2, 28
@@ -226,17 +225,32 @@ COLOCA_PECA_LINHA:
 	sw t0, 4(a1)
 	sw t2, 0(a2)
 	
-	add t1, a0, t2
-	lw t1, 0(t1)
-	beqz t1, COLOCA_PECA
+	add a0, a0, t2
+	lw t1, 0(a0)
+	beqz t1, ESCOLHE_COR
 	
 	addi t0, t0, -1
 	addi t2, t2, -4
 	bgez t2, COLOCA_PECA_LINHA
 	j JOGO
+
+COLOCA_AMARELA:
+	li t0, 1
+	sw t0, 0(a0)
+	j COLOCA_PECA
+	
+COLOCA_VERMELHA:
+	li t0, 2
+	sw t0, 0(a0)
+	j COLOCA_PECA		
+				
+ESCOLHE_COR:	
+	la a1, peca
+	lw t0, 0(a1)
+	beqz t0, COLOCA_AMARELA
+	j COLOCA_VERMELHA
 	
 COLOCA_PECA:	
-	
 	li s0, 0xff0			
 	slli s0, s0, 20
 	addi s0, s0, 642		#320 + 320 + 2
