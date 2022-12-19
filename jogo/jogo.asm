@@ -42,10 +42,7 @@ PRINT_TAB: 				#printa o tabuleiro na tela
 	bne t0, s2, PRINT_TAB
 		
 JOGO: 
-	la a0, posicao_inicial
-	li t0, 2
-	sw t0, 0(a0)
-	sw t0, 4(a0)
+	#j CHECA_VITORIA
 					#prepara para começar o jogo
 	li s0, 0xff0
 	slli s0, s0, 20
@@ -220,17 +217,18 @@ COLOCA_PECA_COLUNA:
   	la a1, vetor_peca
   	la a2, linha_peca
   	li t2, 28
+  	add a0, a0, t2
   	
 COLOCA_PECA_LINHA:
 	sw t0, 4(a1)
 	sw t2, 0(a2)
 	
-	add a0, a0, t2
 	lw t1, 0(a0)
 	beqz t1, ESCOLHE_COR
 	
 	addi t0, t0, -1
 	addi t2, t2, -4
+	addi a0, a0, -4
 	bgez t2, COLOCA_PECA_LINHA
 	j JOGO
 
@@ -319,6 +317,10 @@ CHECA_PECA:				#checa se a peça chegou no final
 	
 ANDA_PECA:
 	call APAGA_PECA
+	
+	li a7, 32
+	li a0, 25
+	ecall
 	
 	la a2, checa_peca
 	lw t1, 0(a2)
@@ -420,6 +422,95 @@ TROCA_PECA:
 	la a0, checa_peca
 	sw zero, 0(a0)
 	
+	la a0, posicao_inicial
+	li t0, 2
+	sw t0, 0(a0)
+	sw t0, 4(a0)
+	
+	#se não é igual a amarelo, então é a vez do computador
+	
+	rdtime t0
+	li t1, 7
+	rem t0, t0, t1
+	
+	la a0, posicao_inicial
+	li t2, 36
+	lw t1, 0(a0)
+	mul t2, t2, t0
+	add t1, t1, t2
+	sw t1, 0(a0)
+	
+	la a0, coluna_peca
+	li t2, 32
+	mul t1, t2, t0
+	sw t1, 0(a0)
+	
+	la a0, vetor_peca
+	sw t0, 0(a0)
+	
+	j COLOCA_PECA_COLUNA
+	
+
+	la a1, endereco_seta
+	lw t0, 0(a1)
+	
+	li s0, 0xff0
+	slli s0, s0, 20
+	
+	la a0, tabuleiro
+	addi a0, a0, 8
+	
+	add a0, a0, t0
+	add s0, s0, t0
+	
+	li s1, 16
+	li t0, 0
+	li t1, 0
+REINICIA_SETA:	
+	lw t2, 0(a0)
+	sw t2, 0(s0)
+	
+	addi t1, t1, 4
+	addi s0, s0, 4
+	addi a0, a0, 4
+	
+	bne s1, t1, REINICIA_SETA
+
+
+	li t1, 0
+	addi t0, t0, 1
+	
+	addi s0, s0, 320
+	addi a0, a0, 320
+	sub s0, s0, s1
+	sub a0, a0, s1
+	
+	bne t0, s1, REINICIA_SETA
+	
+	la s1, endereco_seta
+	li t0, 12
+	sw t0, 0(s1)
+	
+	la s1, posicao_inicial
+	li t0, 2
+	sw t0, 0(s1)
+	sw t0, 4(s1)
+	
+	la s1, coluna_peca
+	sw zero, 0(s1)
+	
+	la s1, linha_peca
+	sw zero, 0(s1)
+	
+	la s1, vetor_peca
+	sw zero, 0(s1)
+	sw zero, 4(s1)
+	
+	la a0, posicao_inicial
+	li t0, 2
+	sw t0, 0(a0)
+	sw t0, 4(a0)
+	
 	j JOGO
 TROCA_AMARELO:
 	sw zero, 0(a0)
@@ -427,4 +518,23 @@ TROCA_AMARELO:
 	la a0, checa_peca
 	sw zero, 0(a0)
 	
-	j JOGO
+	la a1, endereco_seta
+	lw t0, 0(a1)
+	
+	li s0, 0xff0
+	slli s0, s0, 20
+	
+	la a0, tabuleiro
+	addi a0, a0, 8
+	
+	add a0, a0, t0
+	add s0, s0, t0
+	
+	li s1, 16
+	li t0, 0
+	li t1, 0
+	
+	j REINICIA_SETA
+
+CHECA_VITORIA:
+	
