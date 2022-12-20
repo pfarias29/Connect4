@@ -41,9 +41,8 @@ PRINT_TAB: 				#printa o tabuleiro na tela
 	
 	bne t0, s2, PRINT_TAB
 		
-JOGO: 
-	#j CHECA_VITORIA
-					#prepara para começar o jogo
+JOGO: 					#prepara para começar o jogo
+	
 	li s0, 0xff0
 	slli s0, s0, 20
 	la a0, seta
@@ -229,7 +228,7 @@ COLOCA_PECA_LINHA:
 	addi t0, t0, -1
 	addi t2, t2, -4
 	addi a0, a0, -4
-	bgez t2, COLOCA_PECA_LINHA
+	bgez t2, COLOCA_PECA_LINHA	
 	j JOGO
 
 COLOCA_AMARELA:
@@ -413,6 +412,8 @@ APAGA_PECA2:			#apaga a peca anterior
 	ret
 
 TROCA_PECA:
+	j CHECA_VITORIA_LINHA
+RET_PECA:
 	la a0, peca
 	lw t0, 0(a0)
 	bnez t0, TROCA_AMARELO
@@ -511,6 +512,7 @@ REINICIA_SETA:
 	sw t0, 0(a0)
 	sw t0, 4(a0)
 	
+	
 	j JOGO
 TROCA_AMARELO:
 	sw zero, 0(a0)
@@ -536,5 +538,147 @@ TROCA_AMARELO:
 	
 	j REINICIA_SETA
 
-CHECA_VITORIA:
+CHECA_VITORIA_LINHA: 
+	la a0, vetor_tab
+	li s4, 0			#contador de linhas
+	li s5, 0			#contador de colunas
 	
+TESTA_LINHA1:
+	li t0, 5
+	bge s4, t0, RESETA_LINHA
+
+	lw t0, 0(a0)
+	bnez t0, TESTA_LINHA2
+	
+	addi s4, s4, 1
+	addi a0, a0, 4
+	beqz zero, TESTA_LINHA1
+	
+TESTA_LINHA2:
+	lw s6, 0(a0)			#cor que estava no primeiro
+	lw t0, 4(a0)
+	
+	beq s6, t0, TESTA_LINHA3
+	
+	addi s4, s4, 2
+	addi a0, a0, 8
+	beqz zero, TESTA_LINHA1
+
+TESTA_LINHA3:
+	lw t0, 8(a0)
+	
+	beq s6, t0, TESTA_LINHA4
+	
+	addi s4, s4, 3
+	addi a0, a0, 12
+	beqz zero, TESTA_LINHA1
+
+TESTA_LINHA4:
+	lw t0, 12(a0)
+	
+	beq s6, t0, FIM_JOGO
+	
+	addi s4, s4, 4
+	addi a0, a0, 16
+	beqz zero, TESTA_LINHA1
+	
+RESETA_LINHA:
+	li t0, 7
+	bge s5, t0, CHECA_VITORIA_COLUNA
+	
+	mv s4, zero
+	addi s5, s5, 1
+	
+	#li t1, 32
+	#la a0, vetor_tab
+	#mul t1, t1, s5
+	#add a0, a0, s5
+	addi a0, a0, 12
+	
+	beqz zero, TESTA_LINHA1
+	
+CHECA_VITORIA_COLUNA:
+	la a0, vetor_tab
+	li s4, 0			#contador de linhas
+	li s5, 0			#contador de colunas
+	
+TESTA_COLUNA1:
+	li t0, 5
+	bge s5, t0, RESETA_COLUNA
+
+	lw t0, 0(a0)
+	bnez t0, TESTA_COLUNA2
+	
+	addi s5, s5, 1
+	addi a0, a0, 32
+	beqz zero, TESTA_COLUNA1
+
+TESTA_COLUNA2:
+	lw s6, 0(a0)			#cor que estava no primeiro	
+	lw t0, 32(a0)
+	
+	beq s6, t0, TESTA_COLUNA3
+	
+	addi s5, s5, 2
+	addi a0, a0, 64
+	beqz zero, TESTA_COLUNA1
+
+TESTA_COLUNA3:
+	lw t0, 64(a0)
+	
+	beq s6, t0, TESTA_COLUNA4
+	
+	addi s5, s5, 3
+	addi a0, a0, 96
+	beqz zero, TESTA_COLUNA1
+	
+TESTA_COLUNA4:
+	lw t0, 96(a0)
+	
+	beq s6, t0, FIM_JOGO
+	
+	addi s5, s5, 4
+	addi a0, a0, 128
+	beqz zero, TESTA_COLUNA1
+
+RESETA_COLUNA:
+	li t0, 7
+	bge s4, t0, RET_PECA
+	
+	mv s5, zero
+	addi s4, s4 1
+	
+	li t0, 4
+	mul t0, t0, s4
+	la a0, vetor_tab
+	add a0, a0, t0
+	
+	beqz zero, TESTA_COLUNA1
+
+FIM_JOGO:
+	li t0, 1
+	beq t0, s6 AMARELA_GANHOU
+	j VERMELHA_GANHOU
+	
+AMARELA_GANHOU:
+	li t1,0xFF000000	# endereco inicial da Memoria VGA - Frame 0
+	li t2,0xFF012C00	# endereco final 
+	li t3,0x7F7F7F7F	# cor vermelho|vermelho|vermelhor|vermelho
+	
+	j LOOP_VITORIA
+	
+VERMELHA_GANHOU:
+	
+	li t1,0xFF000000	# endereco inicial da Memoria VGA - Frame 0
+	li t2,0xFF012C00	# endereco final 
+	li t3,0x07070707	# cor vermelho|vermelho|vermelhor|vermelho
+
+LOOP_VITORIA:
+ 	beq t1,t2,FORA		# Se for o último endereço então sai do loop
+	sw t3,0(t1)		# escreve a word na memória VGA
+	addi t1,t1,4		# soma 4 ao endereço
+	j LOOP_VITORIA	
+
+FORA:
+	li a7, 10
+	ecall
